@@ -97,7 +97,10 @@ osnxconfget() {
         return 127
     fi
 
-    yq read -D "$default" -- ~/.osnx.yaml "$1"
+    # yq won't print out newlines for defaults, which can be pretty unreadable
+    # so to provide a consistent experience we simply add one ourselves by echoing
+    value="$(yq read -D "$default" -- ~/.osnx.yaml "$1")"
+    echo "$value"
 }
 
 osnxftp() {
