@@ -74,8 +74,12 @@ osnxconfhelp() {
 
 osnxconfget() {
     local default
+    local path="$1"
 
-    case "$1" in
+    case "$path" in
+        ftp.flags)
+            default='-n --prompt="nx >"'
+            path='ftp.flags[*]' ;;
         ftp.port)
             # default to standard sys-ftpd-light port
             default=5000 ;;
@@ -99,11 +103,12 @@ osnxconfget() {
 
     # yq won't print out newlines for defaults, which can be pretty unreadable
     # so to provide a consistent experience we simply add one ourselves by echoing
-    value="$(yq read -D "$default" -- ~/.osnx.yaml "$1")"
+    value="$(yq read -D "$default" -- ~/.osnx.yaml "$path")"
     echo "$value"
 }
 
 osnxftp() {
+    local flags
     local ip
     local port
 
@@ -115,6 +120,9 @@ osnxftp() {
             port="$2" ;;
     esac
 
+    flags="$(osnx conf get ftp.flags | tr '\n' ' ')"
+    eval set -- "$flags"
+
     if [ -z "$ip" ]; then
         ip="$(osnx ip)"
     fi
@@ -123,14 +131,7 @@ osnxftp() {
         port="$(osnx conf get ftp.port)"
     fi
 
-    user="$(osnx conf get ftp.user)"
-    pass="$(osnx conf get ftp.pass)"
-
-    if [ -n "$user" ] || [ -n "$pass" ]; then
-        echo
-    fi
-
-    ftp -n -v --prompt='nx> ' "$ip" "$port"
+    ftp "$@" -- "$ip" "$port"
 }
 
 osnxip() {
