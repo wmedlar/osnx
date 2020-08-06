@@ -55,7 +55,7 @@ osnxconf() {
             return 127 ;;
     esac
 
-    if ! command -v yq >/dev/null; then
+    if ! binexists yq ; then
         stderr 'cannot read configuration file without yq'
         stderr 'please install with "brew install yq"'
         stderr 'configuration interaction without yq will be best-effort'
@@ -87,7 +87,7 @@ osnxconfget() {
     esac
 
     # best-effort attempt with yq simply prints out default value
-    if ! command -v yq >/dev/null; then
+    if ! binexists yq ; then
         if [ "${default?x}" ]; then # checks if $default is set, exiting 127 if not
             stderr 'yq not found, using configured default'
             echo "$default"
@@ -147,7 +147,7 @@ osnxip() {
 
     # switch will not always be present in arp cache
     # so we'll run a ping scan to see if we can find it
-    if [ -z "$ip" ] && command -v nmap >/dev/null; then
+    if [ -z "$ip" ] && binexists nmap ; then
         stderr "running ping scan to populate arp cache"
         nmap -sn -Pn 192.168.1.0/24 >/dev/null          # TODO: determine actual network
         # and see if we can find it again
@@ -196,6 +196,10 @@ osnxlsmultiple() {
 }
 
 # helpers
+binexists() {
+    command -v "$1" >/dev/null
+}
+
 stderr()  {
     echo "$@" >&2
 }
