@@ -48,21 +48,22 @@ osnxconf() {
         "" | --help)
             osnxconfhelp
             return 0 ;;
-    esac
-
-    # TODO: check yq
-
-    case "$1" in
-        get)
-            osnxconfget "${@:2}" ;;
-        loc | location)
-            ;;
-        set)
-            ;;
+        get) ;; # so we can handle unrecognized commands without printing the yq warning
         *)
             stderrf 'command not recognized: "%s"\n\n' "$1"
             osnxconfhelp
             return 127 ;;
+    esac
+
+    if ! command -v yq >/dev/null; then
+        stderr 'cannot read configuration file without yq'
+        stderr 'please install with "brew install yq"'
+        stderr 'configuration interaction without yq will be best-effort'
+    fi
+
+    case "$1" in
+        get)
+            osnxconfget "${@:2}" ;;
     esac
 }
 
@@ -85,20 +86,16 @@ osnxconfget() {
             default=5000 ;;
     esac
 
-    # check if yq is installed
+    # best-effort attempt with yq simply prints out default value
     if ! command -v yq >/dev/null; then
-        stderrf 'cannot read configuration file without yq'
-
-        # if it isn't, but we have a default, print a warning to stderr and use the default
         if [ "${default?x}" ]; then # checks if $default is set, exiting 127 if not
-            stderr  ', using default'
+            stderr 'yq not found, using configured default'
             echo "$default"
             return 0
         fi
 
-        # if it isn't and we don't have a default, print and error and exit
-        stderr ', please install with "brew install yq"'
-        return 127
+        stderr 'yq not found, cannot read configuration'
+        return 126
     fi
 
     # yq won't print out newlines for defaults, which can be pretty unreadable
