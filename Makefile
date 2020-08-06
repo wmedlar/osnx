@@ -6,7 +6,6 @@ install: dependencies
 
 .PHONY: dependencies
 dependencies:
-	command -v nmap || brew install nmap
 	command -v yq   || brew install yq
 
 .PHONY: uninstall

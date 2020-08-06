@@ -147,9 +147,9 @@ osnxip() {
 
     # switch will not always be present in arp cache
     # so we'll run a ping scan to see if we can find it
-    if [ -z "$ip" ] && binexists nmap ; then
+    if [ -z "$ip" ]; then
         stderr "running ping scan to populate arp cache"
-        nmap -sn -Pn 192.168.1.0/24 >/dev/null          # TODO: determine actual network
+        nmap # TODO: determine actual network
         # and see if we can find it again
         ip="$(ipfrommac "$mac")"
     fi
@@ -162,12 +162,6 @@ osnxip() {
     fi
 
     echo "$ip"
-}
-
-ipfrommac() {
-    netstat -rnlf inet      | # print ipv4 routing tables
-    sed -e '1,/default/d'   | # pull out everything after the "default" desination (the first result)
-    awk "/$1/"'{print $1}'  # retrive the corresponding ip to our mac address from the first column
 }
 
 osnxls() {
@@ -198,6 +192,33 @@ osnxlsmultiple() {
 # helpers
 binexists() {
     command -v "$1" >/dev/null
+}
+
+ipfrommac() {
+    netstat -rnlf inet      | # print ipv4 routing tables
+    sed -e '1,/default/d'   | # pull out everything after the "default" desination (the first result)
+    awk "/$1/"'{print $1}'  # retrive the corresponding ip to our mac address from the first column
+}
+
+# performs a ping scan of devices on the network to populate the arp cache
+# is it slower than the real nmap? yes, by a lot (~1.5s vs nmap's ~0.1s)
+# but it's still fast enough and it prevents adding one more dependency
+nmap() {
+    local jobs
+
+    for i in $(seq 1 254); do
+        # options:
+        #   -n don't attempt to look up names for the output we're ignoring
+        #   -q less verbose output (that we're still ignoring)
+        #   -t 1  exit after one second regardless of the response
+        #   -c 1  send a single packet
+        #   -s 0  that includes no data bytes
+        #   -W 1  and is ignored if not replied to in one second
+        ( ping -nq -c 1 -s 0 -t 1 -W 1 "192.168.1.$i" &>/dev/null) &
+        jobs="$jobs $!"
+    done
+
+    wait $jobs
 }
 
 stderr()  {
