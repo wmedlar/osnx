@@ -162,7 +162,7 @@ osnxip() {
     # so we'll run a ping scan to see if we can find it
     if [ -z "$ip" ]; then
         stderr "running ping scan to populate arp cache"
-        nmap # TODO: determine actual network
+        nmap # not the real nmap!
         # and see if we can find it again
         ip="$(ipfrommac "$mac")"
     fi
@@ -232,6 +232,7 @@ nmap() {
 
     local jobs
 
+    # and then ping every single address to fill out the arp cache!
     for address in $addresses; do
         # explanation of options, most set for speeeeeed:
         #   -n don't attempt to look up names for the output we're ignoring
