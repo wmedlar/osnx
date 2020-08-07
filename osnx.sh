@@ -189,19 +189,18 @@ osnxls() {
     case "$#" in
         0)
             # simplest case, just list the current working directory (usually /)
-            osnxcurl "" --list-only ;;
+            osnxcurl . --list-only ;;
         1)
             # remove trailing slashes, we will add one where needed
             path="$(sed 's/\/*$//' <<< "$1")"
 
             # ftp only treats paths that end in a slash as directories
             # without the trailing slash here we would list the parent directory
-            # this is different than how ls handles directory listing
             if osnxcurl "$path/" --list-only; then
                 return 0
             fi
 
-            # listing will fail if the path is not a directory or does not exist
+            # listing fails if the path is either not a directory or does not exist
             # mimic ls behavior by checking if the path exists and printing if it does
             if osnxcurl "$path" --list-only | grep -e "^$path$" -e "^/$path$" ; then
                 return 0
