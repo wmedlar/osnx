@@ -312,5 +312,6 @@ osnxls() {
     return "$errors"
 }
 
-. "$(dirname $(readlink "$0"))/helpers.sh"
+# shellcheck source=helpers.sh
+. "$(dirname "$(readlink "$0")")/helpers.sh"
 osnx "$@"
