@@ -241,7 +241,7 @@ nmap() {
         #   -c 1  send a single packet
         #   -s 0  that includes no data bytes
         #   -W 1  and is ignored if not replied to in one second
-        ( ping -nq -c 1 -s 0 -t 1 -W 1 "$address" &>/dev/null) &
+        ( ping -nq -c 1 -s 0 -t 1 -W 1 "$address" || true) &>/dev/null &
         jobs="$jobs $!"
     done
 
