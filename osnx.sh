@@ -75,9 +75,7 @@ osnxcp() {
             return 126 ;;
     esac
 
-    errors=0
-
-    local dest="${@: -1}" # the space is necessary so it's not interpreted as a default
+    local dest="${*: -1}" # the space is necessary so it's not interpreted as a default
     set -- "${@:0:$#}"    # expands to all args except the last
 
     # if we have multiple sources then the destination is a directory
@@ -97,10 +95,22 @@ osnxcp() {
                 dest="$dest/"
             fi
 
-            for src in "$@"; do
-                src="$(sed 's/^.*://' <<< "$src")"
-                local output
+            # error if the destination is a file while we expect it to be a directory
+            # -f only detects a file if it doesn't have a trailing slash so trim any off
+            if [ -f "$(sed 's/\/*$//' <<< "$dest")" ]; then
+                # we diverge from cp behavior here by only printing the following once
+                # cp will print it for every single file which isn't helpful to a user here
+                stderrf '%s: not a directory\n' "$dest"
+                return 1
+            fi
 
+            for src in "$@"; do
+                # trim off remote prefix, e.g., switch:/hbmenu.nro -> /hbmenu.nro
+                src="$(sed 's/^.*://' <<< "$src")"
+
+                # curl does not create full names when we use the --output flag
+                # so if the destination is a directory then
+                local output
                 case "$dest" in
                     */)
                         output="$dest/$(basename "$src")" ;;
