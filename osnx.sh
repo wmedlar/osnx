@@ -203,7 +203,7 @@ osnxls() {
 
             # listing will fail if the path is not a directory or does not exist
             # mimic ls behavior by checking if the path exists and printing if it does
-            if osnxcurl "$path" --list-only | grep "$path"; then
+            if osnxcurl "$path" --list-only | grep -e "^$path$" -e "^/$path$" ; then
                 return 0
             fi
 
