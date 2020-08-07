@@ -45,6 +45,7 @@ osnxcat() {
             continue
         fi
 
+        # error count is the number of non-file paths we encounter
         ((errors=errors+1))
 
         # adding the trailing slash back in causes curl to treat our path as a directory
@@ -210,46 +211,35 @@ osnxip() {
 }
 
 osnxls() {
-    case "$#" in
-        0)
-            # simplest case, just list the current working directory (usually /)
-            osnxcurl . --list-only ;;
-        1)
-            # remove trailing slashes, we will add one where needed
-            path="$(sed 's/\/*$//' <<< "$1")"
-
-            # ftp only treats paths that end in a slash as directories
-            # without the trailing slash here we would list the parent directory
-            if osnxcurl "$path/" --list-only; then
-                return 0
-            fi
-
-            # listing fails if the path is either not a directory or does not exist
-            # mimic ls behavior by checking if the path exists and printing if it does
-            if osnxcurl "$path" --list-only | grep -e "^$path$" -e "^/$path$" ; then
-                return 0
-            fi
-
-            # path does not exist so we inform the user and exit nonzero
-            # we use the original filename for clarity to the user
-            stderrf '%s: no such file or directory\n' "$1"
-            exit 1 ;;
-        *)
-            # recursively iterate through multiple directories
-            # printing each directory name before listing
-            osnxlsmultiple "$@" ;;
-    esac
-}
-
-osnxlsmultiple() {
     errors=0
 
-    for dir in "$@"; do
-        stderrf "\n$dir:\n"
+    if [ "$#" -eq 0 ]; then
+        # like ls we will simply list the current directory
+        set -- .
+    fi
 
-        if ! osnxls "$dir"; then
-            ((errors=errors+1))
+    for arg in "$@"; do
+        # remove trailing slashes so we can treat these as files if we need to
+        path="$(sed 's/\/*$//' <<< "$arg")"
+
+        if osnxcurl "$path/" --list-only ; then
+            continue
         fi
+
+        # error count is the number of non-directory paths we encounter
+        ((errors=errors+1))
+
+        # removing the trailing slash causes curl to treat our path as a file
+        # curl will attempt to RETR which will only succeed if our path is a file
+        # we only retrieve the first byte to avoid downloading any more than necessary
+        if osnxcurl "$path" -r 0-0 >/dev/null; then
+            # simply print out the original argument like ls
+            echo "$arg"
+            continue
+        fi
+
+        # if the path can't be listed or read it must not exist
+        stderrf '%s: no such file or directory\n' "$arg"
     done
 
     return "$errors"
