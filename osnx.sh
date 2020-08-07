@@ -273,6 +273,8 @@ osnxip() {
     fi
 
     echo "$ip"
+
+    # TODO save ip in config for duration of osnx invocation to save cpu cycles
 }
 
 osnxls() {
