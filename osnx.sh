@@ -33,14 +33,32 @@ osnxhelp() {
 }
 
 osnxcat() {
-    port="$(osnx conf get ftp.port)"
-    ip="$(osnx ip)"
+    errors=0
 
-    for file in "$@"; do
-        if [ -n "$file" ]; then
-            curl --connect-timeout 3 "ftp://$ip:$port/$file"
+    for arg in "$@"; do
+        # remove trailing slashes, these should be files we're working with
+        path="$(sed 's/\/*$//' <<< "$arg")"
+
+        # since we removed trailing slashes, curl will treat our path as a file
+        # the "read" command, RETR, only works on files so directories will fail
+        if osnxcurl "$path"; then
+            continue
         fi
+
+        ((errors=errors+1))
+
+        # adding the trailing slash back in causes curl to treat our path as a directory
+        # curl will attempt to NLST which will only succeed if the path is a directory
+        if osnxcurl "$path/" --list-only >/dev/null; then
+            stderrf '%s: is a directory\n' "$arg"
+            continue
+        fi
+
+        # if the path can't be read or listed it must not exist
+        stderrf '%s: no such file or directory\n' "$arg"
     done
+
+    return "$errors"
 }
 
 osnxcurl() {
