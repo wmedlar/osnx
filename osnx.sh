@@ -245,5 +245,5 @@ osnxls() {
     return "$errors"
 }
 
-. helpers.sh
+. "$(dirname $(readlink "$0"))/helpers.sh"
 osnx "$@"
