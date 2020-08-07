@@ -179,7 +179,7 @@ osnxip() {
 
 
     # switch settings list the mac in AB-0X-[...] format, convert this to ab:x:[...]
-    mac="$(echo "$mac" | tr -- '-[:upper:]' ':[:lower:]' | sed -E 's/0([a-f0-9])/\1/g')"
+    mac="$(tr -- '-[:upper:]' ':[:lower:]' <<< "$mac" | sed -E 's/0([a-f0-9])/\1/g')"
 
     # minimum mac size, with leading zeroes stripped out, would be 11 (e.g., 1:2:3:4:5:6)
     # maximum mac size, with doublets and leading zeroes, would be 17 (e.g., a1:b2:c3:d4:e5:f6)
