@@ -9,6 +9,8 @@ osnx() {
             osnxcat "${@:2}" ;;
         conf)
             osnxconf "${@:2}" ;;
+        cp)
+            osnxcp "${@:2}" ;;
         ftp)
             osnxftp "${@:2}" ;;
         ip)
@@ -27,6 +29,7 @@ osnxhelp() {
     stderr  "Available Commands:"
     stderr  "  cat     Read a remote file from your Nintendo Switch"
     stderr  "  conf    Read and modify osNX configuration"
+    stderr  "  cp      Copy files to and from your Nintendo Switch"
     stderr  "  ftp     Open an FTP connection to your Nintendo Switch"
     stderr  "  ip      Detect your Nintendo Switch's IP address"
     stderr  "  ls      List a remote directory from your Nintendo Switch"
@@ -62,6 +65,56 @@ osnxcat() {
     return "$errors"
 }
 
+osnxcp() {
+    case "$#" in
+        0)
+            # print usage
+            ;;
+        1)
+            # print usage
+            return 126 ;;
+    esac
+
+    errors=0
+
+    local dest="${@: -1}" # the space is necessary so it's not interpreted as a default
+    set -- "${@:0:$#}"    # expands to all args except the last
+
+    # if we have multiple sources then the destination is a directory
+    if [ "$#" -gt 1 ]; then
+        dest="$dest/"
+    fi
+
+    case "$dest" in
+        # remote destination
+        nx:* | switch:*)
+            stderr 'uploading a remote file is not yet supported' ;;
+
+        # local destination
+        *)
+            # if the destination exists and is a directory, treat it as such
+            if [ -d "$dest" ]; then
+                dest="$dest/"
+            fi
+
+            for src in "$@"; do
+                src="$(sed 's/^.*://' <<< "$src")"
+                local output
+
+                case "$dest" in
+                    */)
+                        output="$dest/$(basename "$src")" ;;
+                    *)
+                        output="$dest" ;;
+                esac
+
+                if ! osnxcurl "$src" --create-dirs --output "$output" --remote-time ; then
+                    stderrf '%s: no such file or directory\n' "$src"
+                fi
+            done ;;
+    esac
+}
+
 osnxcurl() {
     ip="$(osnx ip)"
     port="$(osnx conf get ftp.port)"
@@ -75,6 +128,8 @@ osnxcurl() {
         --ftp-method nocwd   \
         --user "$user:$pass"  \
         "${@:2}" -- "ftp://$ip:$port/$1"
+
+    # TODO add error handling for connection timeout
 }
 
 osnxconf() {
