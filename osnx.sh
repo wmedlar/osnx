@@ -66,6 +66,15 @@ osnxcat() {
 }
 
 osnxcp() {
+    # intended behavior:
+    # note: a directory here means the argument has a trailing slash, a file does not
+    # 1. if the source is a directory and the destination is a directory, copy the contents of src to dest
+    # 2. if the source is a directory and the destination is a file, create dest as a directory and perform #1
+    # 3. if the source is a directory and the destination is an existing file, fail "%s: not a directory"
+    # 4. if the source is a file and the destination is a directory, copy src into dest with the same basename
+    # 5. if the source is a file and the destination is a file, copy src to dest
+    # 5. if the source is a file adn the destination is an existing file, overwrite
+
     case "$#" in
         0)
             # print usage
@@ -118,8 +127,6 @@ osnxcp() {
                 # trim off remote prefix, e.g., switch:/hbmenu.nro -> /hbmenu.nro
                 src="$(sed 's/^.*://' <<< "$src")"
 
-                # curl does not create full names when we use the --output flag
-                # so if the destination is a directory then
                 local output
                 case "$dest" in
                     */)
