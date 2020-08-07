@@ -28,7 +28,7 @@ nmap() {
     read -r l3 l4 <<< "$((f3 | 255-nm3)) $((f4 | 255-nm4))"
 
     # finally we can concoct every single ip on the network with ranges
-    addresses="$(eval echo {$f1..$l1}.{$f2..$l2}.{$f3..$l3}.{$f4..$l4})"
+    addresses="$(eval echo {"$f1".."$l1"}.{"$f2".."$l2"}.{"$f3".."$l3"}.{"$f4".."$l4"})"
 
     local jobs
 
@@ -45,6 +45,7 @@ nmap() {
         jobs="$jobs $!"
     done
 
+    # shellcheck disable=SC2086
     wait $jobs
 }
 
@@ -53,5 +54,6 @@ stderr()  {
 }
 
 stderrf() {
+    # shellcheck disable=SC2059
     printf "$1" "${@:2}" >&2
 }
