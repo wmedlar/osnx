@@ -207,8 +207,9 @@ binexists() {
 }
 
 ipfrommac() {
-    netstat -rnlf inet   | # print ipv4 routing tables
-    awk "/$1/"'{print $1}' # retrive the corresponding ip to our mac address from the first column
+    # we don't want a missing match to stop execution of the entire script
+    # leave that logic to the main functions since this will likely be retried
+    netstat -rnlf inet | awk "/$1/"'{ print $1; exit 0 }'
 }
 
 # performs a ping scan of devices on the network to populate the arp cache
