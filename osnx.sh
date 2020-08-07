@@ -40,7 +40,7 @@ osnxcat() {
 
     for arg in "$@"; do
         # remove trailing slashes, these should be files we're working with
-        path="$(sed 's/\/*$//' <<< "$arg")"
+        path="$(trim trailing / "$arg")"
 
         # since we removed trailing slashes, curl will treat our path as a file
         # the "read" command, RETR, only works on files so directories will fail
@@ -106,7 +106,7 @@ osnxcp() {
 
             # error if the destination is a file while we expect it to be a directory
             # -f only detects a file if it doesn't have a trailing slash so trim any off
-            if [ -f "$(sed 's/\/*$//' <<< "$dest")" ]; then
+            if [ -f "$(trim trailing / "$dest")" ]; then
                 # we diverge from cp behavior here by only printing the following once
                 # cp will print it for every single file which isn't helpful to a user here
                 stderrf '%s: not a directory\n' "$dest"
@@ -125,7 +125,7 @@ osnxcp() {
 
             for src in "$@"; do
                 # trim off remote prefix, e.g., switch:/hbmenu.nro -> /hbmenu.nro
-                src="$(sed 's/^.*://' <<< "$src")"
+                src="$(trim leading '.*:' "$src")"
 
                 local output
                 case "$dest" in
@@ -304,7 +304,7 @@ osnxls() {
 
     for arg in "$@"; do
         # remove trailing slashes so we can treat these as files if we need to
-        path="$(sed 's/\/*$//' <<< "$arg")"
+        path="$(trim trailing / "$arg")"
 
         if osnxcurl "$path/" --list-only ; then
             continue
