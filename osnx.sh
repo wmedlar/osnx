@@ -104,6 +104,16 @@ osnxcp() {
                 return 1
             fi
 
+            # determine the ftp server's working directory
+            # we can use this to generate and pass relative urls to curl --output
+            # then we can have curl create the directory structure when recursively downloading
+            # 257 is the successful return code for a pwd command, prefixing the result line
+            ftpwd="$(osnx ftp <<< 'pwd' | awk -F '"' '/257/{print $2}')"
+            if [ -z "$ftpwd" ]; then
+                stderr 'cannot determine ftp working directory, assuming root'
+                ftpwd=/
+            fi
+
             for src in "$@"; do
                 # trim off remote prefix, e.g., switch:/hbmenu.nro -> /hbmenu.nro
                 src="$(sed 's/^.*://' <<< "$src")"
