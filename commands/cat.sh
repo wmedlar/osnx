@@ -1,7 +1,33 @@
+#!/bin/sh
+# cat.sh: osnx command: Print a remote file from your Nintendo Switch to stdout.
+set -e
+
+osnxcatusage=$(printf "Usage:
+  %s cat [file] [file]...
+" "$0" )
+
+osnxcathelp=$(printf "Print a remote file from your Nintendo Switch to stdout.
+
+%s
+
+Description:
+  Read files from your Nintendo Switch over FTP and concatenate them to stdout.
+  If file is a directory or does not exist an error will be printed to stderr
+  and the program will continue reading from the file list.
+
+  If an error occurs during execution, like the one described above, %s will
+  exit with an error code equal to the number of errors that occurred.
+
+  This command makes use of curl's FTP support to retrieve the files.
+
+See Also:
+  curl(1)
+" "$osnxcatusage" )
+
 osnxcat() {
     case "$1" in
         -h | --help)
-            osnxhelp cat
+            printf "%s\n" "$osnxcathelp"
             return 0 ;;
         "")
             # unlike the actual cat we don't read from stdin
