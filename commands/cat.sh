@@ -34,6 +34,16 @@ osnxcat() {
             return 126 ;;
     esac
 
+    # Before we attempt to read files we should test our connection to ensure
+    # we can reach the Nintendo Switch's FTP server. We do this by simply
+    # by connecting to the server and immediately closing the connection.
+    if ! osnxftp &>/dev/null <<< bye; then # TODO this exits zero when ftp fails to connect
+        stderr 'cannot connect to ftp server'
+        return 1
+    fi
+
+    # Count the number of errors encountered while reading files in the
+    # arguments list, this will be our exit code.
     errors=0
 
     for arg in "$@"; do
