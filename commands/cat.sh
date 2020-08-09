@@ -27,10 +27,10 @@ See Also:
 osnxcat() {
     case "$1" in
         -h | --help)
-            printf "%s\n" "$osnxcathelp"
+            printf '%s\n' "$osnxcathelp"
             return 0 ;;
         "")
-            stderrf "%s: Reading from stdin is not supported.\n\n%s\n" "$0" "$osnxcatusage"
+            stderrf '%s: Reading from stdin is not supported.\n\n%s\n' "$0" "$osnxcatusage"
             return 126 ;;
     esac
 
