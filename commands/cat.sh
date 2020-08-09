@@ -30,35 +30,45 @@ osnxcat() {
             printf "%s\n" "$osnxcathelp"
             return 0 ;;
         "")
-            # unlike the actual cat we don't read from stdin
-            osnxhelp cat
+            stderrf "%s: Reading from stdin is not supported.\n\n%s\n" "$0" "$osnxcatusage"
             return 126 ;;
     esac
 
     errors=0
 
     for arg in "$@"; do
-        # remove trailing slashes, these should be files we're working with
+        # $arg may be a directory, so to mimic cat behavior we will need to
+        # perform a few checks in order to give the user an accurate error.
+
+        # First we take the happy path, where $arg is the path to an existing
+        # file. Stripping off trailing slashes will prevent curl from treating
+        # the path as a directory and attempting to list (NLST) it. Without the
+        # slash curl will simply try to read (RETR) the file.
         path="$(trim trailing / "$arg")"
 
-        # since we removed trailing slashes, curl will treat our path as a file
-        # the "read" command, RETR, only works on files so directories will fail
         if osnxcurl "$path"; then
+            # $path is a file and it was read without issue, so we will
+            # continue processing the argument list. This is a minor divergence
+            # from cat behavior, where cat will refuse to read the file and
+            # exit nonzero with "Not a directory". Mimicking that behavior
+            # would require additional FTP overhead that isn't worth the cost.
             continue
         fi
 
-        # error count is the number of non-file paths we encounter
         ((errors=errors+1))
 
-        # adding the trailing slash back in causes curl to treat our path as a directory
-        # curl will attempt to NLST which will only succeed if the path is a directory
+        # Since we know that $path does not lead to a file, it must either be a
+        # directory or nonexistent. To determine if the path is a directory we
+        # attempt to list its contents with curl's --list-only flag. We add a
+        # trailing slash to the path to ensure we list the directory's contents
+        # and not the contents of the directory's ours is contained within.
         if osnxcurl "$path/" --list-only >/dev/null; then
-            stderrf '%s: is a directory\n' "$arg"
+            stderrf '%s: Is a directory\n' "$arg"
             continue
         fi
 
-        # if the path can't be read or listed it must not exist
-        stderrf '%s: no such file or directory\n' "$arg"
+        # If the path cannot be read or listed then it must not exist.
+        stderrf '%s: No such file or directory\n' "$arg"
     done
 
     return "$errors"
