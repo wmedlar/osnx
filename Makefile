@@ -3,7 +3,7 @@ MAKEFILE_DIR := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 .PHONY: lint
 lint:
 	command -v shellcheck || brew install shellcheck
-	shellcheck *.sh
+	shellcheck -ax osnx.sh
 
 .PHONY: install
 install: dependencies
