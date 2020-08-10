@@ -21,7 +21,7 @@ Description:
   This command makes use of curl's FTP support to retrieve the files.
 
 See Also:
-  curl(1)
+  cat(1), curl(1)
 " "$osnxcatusage" )
 
 osnxcat() {
