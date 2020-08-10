@@ -1,3 +1,48 @@
+#!/bin/sh
+set -e
+
+osnxcpusage=$(printf "Usage:
+  %s cp [source] [source]... [destination]
+" "$0")
+
+osnxcphelp=$(printf "Copy files to and from your Nintendo Switch over FTP.
+
+%s
+
+Description:
+  Copy files and directories from your computer running %s to your Nintendo
+  Switch, and from your Nintendo Switch to your computer over FTP. All uploads
+  and downloads are recursive so copies involving directories will fully
+  traverse the directory tree.
+
+  Semantics are similar to cp in that copying a directory with a trailing slash
+  will copy the directory contents and not the directory itself. See below for
+  an example of this.
+
+Examples:
+  upload cheats for version 4.1.1 of Animal Crossing New Horizons to your
+  Nintendo Switch running atmosphere:
+
+    %s cp ac5309b683630ced.txt 7515e5f76d09f8a3.txt \\
+        switch:/atmosphere/contents/01006F8002326000/cheats/
+
+  upload a directory of Tesla overlays to your Nintendo Switch:
+
+    %s cp .overlays switch:/switch/
+
+  backup your JKSV saves, dropping the 'JKSV/save/' prefix:
+
+    %s cp switch:/JKSV/saves/ ~/switch/saves
+
+  download every screenshot and video capture saved on your Nintendo Switch and
+  store them with a flattened directory structure:
+
+    %s cp switch:/Nintendo/Album/2020/[01-12]/[00-31]/ ~/Pictures/switch
+
+See Also:
+  curl(1), ftp(1)
+" "$osnxcpusage" "$(basename "$0")" "$0" "$0" "$0" "$0" )
+
 osnxcp() {
     # intended behavior:
     # note: a directory here means the argument has a trailing slash, a file does not
@@ -10,15 +55,11 @@ osnxcp() {
 
     case "$1" in
         -h | --help)
-            osnxhelp cp
+            printf '%s\n' "$osnxcphelp"
             return 0 ;;
-        "")
-            osnxhelp cp
-            return 126 ;;
         *)
-            # we can't do anything with just one file
-            if [ -z "$2" ]; then
-                osnxhelp cp
+            if [ "$#" -lt 2 ]; then
+                stderrf '%s: Not enough arguments.\n\n%s\n' "$0" "$osnxcpusage"
                 return 126
             fi ;;
     esac

@@ -1,6 +1,33 @@
+#!/bin/sh
+set -e
+
+osnxlsusage=$(printf "Usage:
+  %s ls [directory] [directory]...
+" "$0" )
+
+osnxlshelp=$(printf "List a remote directory from your Nintendo Switch.
+
+%s
+
+Description:
+  List directories from your Nintendo Switch over FTP, printing out their
+  contents to stdout. Any number of directories can be passed as arguments and
+  all will be listed. If no arguments are passed, the working directory of the
+  FTP server (usually /) will be listed.
+
+  Listing is performed with curl's --list-only flag, which issues an NLST
+  command to the FTP server. Unlike the true ls, this command will list
+  absolute paths of directory contents rather than paths relative to the
+  directory being listed. This behavior may change in the future to more
+  closely mimic ls.
+
+See Also:
+  curl(1), ftp(1), ls(1)
+" "$osnxlsusage" )
+
 osnxls() {
     case "$1" in -h | --help)
-        osnxhelp ls
+        printf '%s\n' "$osnxlshelp"
         return 0 ;;
     esac
 

@@ -1,17 +1,52 @@
+#!/bin/sh
+set -e
+
+osnxipusage=$(printf "Usage:
+  %s ip [mac]
+" "$0" )
+
+osnxiphelp=$(printf "Detect your Nintendo Switch's IP address.
+
+%s
+
+Description:
+  Determine your Nintendo Switch's IP by searching the ARP routing tables for
+  the given MAC address, which can either be read from the config file or
+  passed as the only argument.
+
+  If no ARP entry is found for the given MAC this command will perform a ping
+  scan of the entire network, similar to the nmap utility, to repopulate the
+  ARP cache. This behavior is reimplimented in MacOS utilities to avoid
+  requiring nmap as a dependency.
+
+  This command is largely used internally and is exposed to the user for
+  interaction with external programs. In general other commands of %s
+  depend heavily upon this one and require the MAC address to be present in
+  your config file.
+
+See Also:
+  arp(8), ipconfig(8), netstat(1), nmap(1), ping(8)
+" "$osnxipusage" "$(basename "$0")" )
+
 osnxip() {
     case "$1" in -h | --help)
-        osnxhelp ip
+        printf '%s\n' "$osnxiphelp"
         return 0 ;;
     esac
 
-    local mac="$1"
+    if [ "$#" -gt 1 ]; then
+        stderrf '%s: Too many arguments.\n\n%s\n' "$0" "$osnxipusage"
+        return 126
+    fi
+
+    mac="$1"
 
     if [ -z "$mac" ]; then
         mac="$(osnx conf get mac)"
     fi
 
     if [ -z "$mac" ]; then
-        stderr 'please set your mac address with "osnx conf set mac <yo:ur:ma:c:ad:dr:es:s>"'
+        stderr 'please set your mac address'
         return 1
     fi
 
