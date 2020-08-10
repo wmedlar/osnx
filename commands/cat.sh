@@ -30,7 +30,7 @@ osnxcat() {
             printf '%s\n' "$osnxcathelp"
             return 0 ;;
         "")
-            stderrf '%s: Reading from stdin is not supported.\n\n%s\n' "$0" "$osnxcatusage"
+            stderrf '%s: Reading from stdin is not supported\n\n%s\n' "$0" "$osnxcatusage"
             return 126 ;;
     esac
 
@@ -38,7 +38,7 @@ osnxcat() {
     # we can reach the Nintendo Switch's FTP server. We do this by simply
     # by connecting to the server and immediately closing the connection.
     if ! osnxftp &>/dev/null <<< bye; then # TODO this exits zero when ftp fails to connect
-        stderr 'cannot connect to ftp server'
+        stderrf '%s: Cannot connect to FTP server\n' "$0"
         return 1
     fi
 

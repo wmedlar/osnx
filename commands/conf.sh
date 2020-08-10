@@ -39,7 +39,7 @@ osnxconf() {
             return 0 ;;
         get) ;; # so we can handle unrecognized commands without printing the yq warning
         *)
-            stderrf '%s: Command not recognized: "%s"\n\n%s\n' "$0" "$1" "$osnxconfusage"
+            stderrf '%s: Unknown command: "%s"\n\n%s\n' "$0" "$1" "$osnxconfusage"
             return 127 ;;
     esac
 
@@ -71,12 +71,12 @@ osnxconfget() {
     # best-effort attempt with yq simply prints out default value
     if ! binexists yq ; then
         if [ "${default?x}" ]; then # checks if $default is set, exiting 127 if not
-            stderr 'yq not found, using configured default'
+            stderrf '%s: yq not found, using configured default\n' "$0"
             echo "$default"
             return 0
         fi
 
-        stderr 'yq not found, cannot read configuration'
+        stderrf '%s: yq not found, cannot read configuration\n' "$0"
         return 126
     fi
 

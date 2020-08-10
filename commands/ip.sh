@@ -46,7 +46,7 @@ osnxip() {
     fi
 
     if [ -z "$mac" ]; then
-        stderr 'please set your mac address'
+        stderrf '%s: Please set your MAC address\n' "$0"
         return 1
     fi
 
@@ -75,8 +75,7 @@ osnxip() {
     fi
 
     if [ -z "$ip" ]; then
-        stderrf "no ip found for mac address %s\n\n" "$1"
-        stderr  "please confirm your system is online"
+        stderrf '%s: No IP found for MAC address: %s\n\n' "$0" "$1"
         return 1
     fi
 

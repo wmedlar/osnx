@@ -59,7 +59,7 @@ osnxls() {
         fi
 
         # if the path can't be listed or read it must not exist
-        stderrf '%s: no such file or directory\n' "$arg"
+        stderrf '%s: No such file or directory\n' "$arg"
     done
 
     return "$errors"
