@@ -19,35 +19,10 @@ Available Commands:
 " "$program" "$0" "$program" ;;
 
         cat)
-            osnxcat -h ;;
+            osnxcat --help ;;
 
-       conf)
-            stderrf "Read %s configuration.
-
-Usage:
-  %s %s get [field]
-
-Description:
-  Read a field from the config file at ~/.osnx.yaml. If a field is not set,
-  a default value will be used if one is configured. Not every field has a
-  default; those that don't will simply print nothing and exit cleanly.
-
-  This command requires yq (https://github.com/mikefarah/yq) to be installed.
-  Install with 'brew install yq' or download from the GitHub Releases page.
-
-Available Fields:
-  ftp
-     .flags    Array of flags passed to the ftp binary in '%s ftp'.
-     .port     Port used to connect to your Nintendo Switch's FTP server.
-
-  mac          The MAC address of your Nintendo Switch, used to determine its
-               network IP. Most commands will not work if this field is unset.
-
-  Additionally if no argument is passed the entire config file will be printed.
-
-  See Also:
-    https://github.com/mikefarah/yq
-" "$program" "$0" "$1" "$program" ;;
+        conf)
+            osnxconf --help ;;
 
         cp)
             stderrf "Copy files to and from your Nintendo Switch over FTP.
