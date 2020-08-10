@@ -1,5 +1,10 @@
 MAKEFILE_DIR := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 
+.PHONY: build
+build: lint
+	mkdir -p bin
+	shc -f osnx.sh -o bin/osnx -rv
+
 .PHONY: lint
 lint:
 	command -v shellcheck || brew install shellcheck
