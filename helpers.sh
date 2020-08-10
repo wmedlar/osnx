@@ -49,6 +49,43 @@ nmap() {
     wait $jobs
 }
 
+# trim [leading | trailing | both] [text] [from-string] [sed-separator=|]
+# removes any number of appearances of text from the corresponding side of from-string
+# text can also be a regex pattern
+# e.g., trim leading '.*:' switch:/switch/.overlays -> /switch/.overlays
+#       trim trailing . 'texting like my grandpa ...' -> 'texting like my grandpa '
+# the sed separator is also adjustable if your text contains the default of |
+trim() {
+    # default of | should be less commonly used in text than other keyboard characters
+    if [ -z "$4" ]; then
+        set -- "$1" "$2" "$3" '|'
+    fi
+
+    # triggers if $2 contains $4, opposite of how it reads
+    case "$2" in *"$4"*)
+        stderr 'text to trim contains sed separator, please specify a different separator'
+        return 1
+    esac
+
+    # sed template pattern to pass to printf, keeps the sed code a little cleaner
+    template="s$4%s$4$4"
+
+    case "$1" in
+        leading)
+            sed "$(printf "$template" "^\($2\)*")" <<< "$3"
+            ;;
+        trailing)
+            sed "$(printf "$template" "\($2\)*$")" <<< "$3"
+            ;;
+        both)
+            trim leading "$2" "$(trim trailing "$2" "$3" "$4")" "$4"
+            ;;
+        *)
+            stderrf '%s: unrecognized modifier, choose from: "leading", "trailing", "both"\n' "$1"
+            return 1
+    esac
+}
+
 stderr()  {
     echo "$@" >&2
 }
