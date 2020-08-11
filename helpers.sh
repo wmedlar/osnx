@@ -70,6 +70,7 @@ trim() {
     # sed template pattern to pass to printf, keeps the sed code a little cleaner
     template="s$4%s$4$4"
 
+    # shellcheck disable=SC2059
     case "$1" in
         leading)
             sed "$(printf "$template" "^\($2\)*")" <<< "$3"
