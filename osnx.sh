@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
 # It's far more helpful to have available commands in the usage dialog, shown
