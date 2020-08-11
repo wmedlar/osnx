@@ -10,6 +10,9 @@ curlexitfatal() {
 	# For documentation on curl exit codes see:
 	#   https://curl.haxx.se/libcurl/c/libcurl-errors.html
 	case "$1" in
+		0)
+			# success!
+			return 1 ;;
 		19)
 			# failed to RETR path, either a directory or nonexistent
 			return 1 ;;
