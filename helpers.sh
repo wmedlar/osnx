@@ -33,6 +33,7 @@ nmap() {
     local jobs
 
     # and then ping every single address to fill out the arp cache!
+    # TODO limit the number of active ping forks for subnets larger than /24
     for address in $addresses; do
         # explanation of options, most set for speeeeeed:
         #   -n don't attempt to look up names for the output we're ignoring
@@ -87,11 +88,13 @@ trim() {
     esac
 }
 
-stderr()  {
-    echo "$@" >&2
-}
-
+# usage: stderrf '%s' 'string' -> 'string'
 stderrf() {
     # shellcheck disable=SC2059
     printf "$1" "${@:2}" >&2
+}
+
+# usage: errorf '%s' 'string' -> 'string\n'
+stderr()  {
+    stderrf '%s\n' "$*"
 }
