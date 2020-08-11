@@ -67,41 +67,105 @@ nmap() {
 	wait $jobs
 }
 
-# trim [leading | trailing | both] [text] [from-string] [sed-separator=|]
-# removes any number of appearances of text from the corresponding side of from-string
-# text can also be a regex pattern
-# e.g., trim leading '.*:' switch:/switch/.overlays -> /switch/.overlays
-#       trim trailing . 'texting like my grandpa ...' -> 'texting like my grandpa '
-# the sed separator is also adjustable if your text contains the default of |
-trim() {
-	# default of | should be less commonly used in text than other keyboard characters
-	if [ -z "$4" ]; then
-		set -- "$1" "$2" "$3" '|'
-	fi
+trimusage=$(printf "Usage:
+  trim <leading | trailing | both> [max] <substring> <string> [separator=|]
+")
 
-	# triggers if $2 contains $4, opposite of how it reads
-	case "$2" in *"$4"*)
-		stderr 'text to trim contains sed separator, please specify a different separator'
-		return 1
+trimhelp=$(printf "Trim a substring from either or both ends of a string.
+
+  %s
+
+Description:
+  Trim a substring from either or both ends of another string, optionally up to
+  a max count. The substring may also be a (non-extended) regular expressions
+  pattern understood by sed.
+
+  If the substring contains the default sed separator '|' another can be passed
+  as the final argument. trim will print an error and exit if the substring
+  given contains the sed separator.
+
+  When max is set, up to that many occurances of the substring will be removed,
+  otherwise all occurances of substring will be removed. Setting max takes
+  precedence over setting the sed separator. To set the sed operator with no
+  max, use a max of 0.
+
+Examples:
+  $ trim trailing ' on main' 'simping on main'
+  simping
+
+  $ trim both '~' '~~~buying gf~~~'
+  buying gf
+
+  $ trim leading 2 '[^/]*/' pictures/of/my/beautiful/wife/
+  my/beautiful/wife/
+
+See Also:
+  sed(1)
+" "$trimusage" )
+trim() {
+	direction="$1"
+
+	case "$#" in
+		0)
+			stderrf '%s\n' "$trimhelp"
+			return 0 ;;
+		1 | 2)
+			stderrf 'trim: Not enough arguments.\n\n%s\n' "$trimusage"
+			return 1 ;;
+		3)
+			max=0
+			substring="$2"
+			string="$3"
+			separator='|' ;;
+		4)
+			max="$2"
+			substring="$3"
+			string="$4"
+			separator='|' ;;
+		5)
+			max="$2"
+			substring="$3"
+			string="$4"
+			separator="$5" ;;
+		*)
+			stderrf 'trim: Too many arguments.\n\n%s\n' "$trimusage"
+			return 1 ;;
 	esac
 
-	# sed template pattern to pass to printf, keeps the sed code a little cleaner
-	template="s$4%s$4$4"
+	# Triggers if $substring contains $separator, opposite to how it reads.
+	case "$substring" in *"$separator"*)
+		stderrf 'trim: Substring "%s" contains sed separator "%s"\n' \
+			"$substring" "$separator"
+		return 1 ;;
+	esac
+
+	template="$(printf 's%s%%s%s%s' "$separator" "$separator" "$separator")"
+
+	case "$max" in
+		0 | -1)
+			maxpattern='*' ;;
+		*)
+			maxpattern="\{0,$max\}" ;;
+	esac
 
 	# shellcheck disable=SC2059
 	case "$1" in
 		leading)
-			sed "$(printf "$template" "^\($2\)*")" <<< "$3"
-			;;
+			sed "$(printf "$template" "^\($substring\)$maxpattern")" \
+				<<< "$string" ;;
 		trailing)
-			sed "$(printf "$template" "\($2\)*$")" <<< "$3"
-			;;
+			sed "$(printf "$template" "\($substring\)$maxpattern$")" \
+				<<< "$string" ;;
 		both)
-			trim leading "$2" "$(trim trailing "$2" "$3" "$4")" "$4"
-			;;
+			trim leading \
+				"$max" \
+				"$substring" \
+				"$(trim trailing "$max" "$substring" "$string" "$separator")" \
+				"$separator" ;;
 		*)
-			stderrf '%s: unrecognized modifier, choose from: "leading", "trailing", "both"\n' "$1"
-			return 1
+			stderrf 'trim: Unrecognized direction modifier: "%s"\n\n%s\n' \
+				"$direction" "$trimusage"
+			return 1 ;;
 	esac
 }
 
