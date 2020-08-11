@@ -60,8 +60,7 @@ osnxcurl() {
         --ftp-method nocwd   \
         --user "$user:$pass"  \
         "${@:2}" -- "ftp://$ip:$port/$1"
-
-    # TODO add error handling for connection timeout
+    return "$?"
 }
 
 # shellcheck source=commands/cat.sh

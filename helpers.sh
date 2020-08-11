@@ -5,6 +5,23 @@ binexists() {
     command -v "$1" >/dev/null
 }
 
+curlexitfatal() {
+    # An exit code will return 0 to signify that it's fatal, and a 0 otherwise.
+    # For documentation on curl exit codes see:
+    #   https://curl.haxx.se/libcurl/c/libcurl-errors.html
+    case "$1" in
+        19)
+            # failed to RETR path, either a directory or nonexistent
+            return 1 ;;
+        28)
+            # connection timed out, likely the server isn't reachable
+            return 0 ;;
+        *)
+            stderr "Uncaught curl exit code: $1"
+            return 0 ;;
+    esac
+}
+
 ipfrommac() {
     # we don't want a missing match to stop execution of the entire script
     # leave that logic to the main functions since this will likely be retried
