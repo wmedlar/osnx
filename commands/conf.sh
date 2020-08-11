@@ -61,7 +61,7 @@ osnxconfget() {
 
 	case "$path" in
 		ftp.flags)
-			default='--no-login --no-prompt --prompt="nx> "'
+			default='--no-prompt --prompt="nx> "'
 			path='ftp.flags[*]' ;;
 		ftp.port)
 			# default to standard sys-ftpd-light port
