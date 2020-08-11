@@ -20,34 +20,34 @@ osnxhelphelp=$(printf "Get information on any %s command.
 " "$(basename "$0")" "$osnxhelpusage" )
 
 osnxhelp() {
-    case "$1" in
-        -h | --help | "")
-            printf '%s\n' "$osnxhelphelp"
-            return 0 ;;
+	case "$1" in
+		-h | --help | "")
+			printf '%s\n' "$osnxhelphelp"
+			return 0 ;;
 
-        cat)
-            osnxcat --help ;;
+		cat)
+			osnxcat --help ;;
 
-        conf)
-            osnxconf --help ;;
+		conf)
+			osnxconf --help ;;
 
-        cp)
-            osnxcp --help ;;
+		cp)
+			osnxcp --help ;;
 
-        ftp)
-            osnxftp --help ;;
+		ftp)
+			osnxftp --help ;;
 
-        help)
-            osnxhelp --help ;;
+		help)
+			osnxhelp --help ;;
 
-        ip)
-            osnxip --help ;;
+		ip)
+			osnxip --help ;;
 
-        ls)
-            osnxls --help ;;
+		ls)
+			osnxls --help ;;
 
-        *)
-            stderrf '%s: Unknown command: "%s"\n\n%s\n' "$0" "$1" "$osnxhelpusage"
-            return 127 ;;
-    esac
+		*)
+			stderrf '%s: Unknown command: "%s"\n\n%s\n' "$0" "$1" "$osnxhelpusage"
+			return 127 ;;
+	esac
 }
