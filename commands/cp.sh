@@ -142,8 +142,23 @@ osnxcpremote2local() {
 				stderrf '%s: Failed to retrieve file: "%s"\n' "$0" "$arg"
 				(( errors=errors+1 ))
 			fi
+
+			continue
+
 		elif curlexitfatal "$?" ; then
 			stderrf '%s: Failed to retrieve file: "%s"\n' "$0" "$arg"
+			(( errors=errors+1 ))
+			continue
+
+		fi
+
+		if osnxcurl "$src/" --list-only -r 0-0 >/dev/null ; then
+			: # noop
+		elif curlexitfatal "$?" ; then
+			stderrf '%s: Failed to list path: "%s"\n' "$0" "$arg"
+			(( errors=errors+1 ))
+		else
+			stderrf '%s: No such file or directory: "%s"\n' "$0" "$arg"
 			(( errors=errors+1 ))
 		fi
 	done
