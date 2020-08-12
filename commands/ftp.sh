@@ -51,7 +51,7 @@ osnxftp() {
 	# machine, add the --no-login flag and login manually.
 	if [ -n "$user" ]; then
 		netrc="$(mktemp -dt osnxftp)/netrc"
-		trap 'rm -rf "$(basename "$netrc")"' exit
+		trap 'rm -rf "$(dirname "$netrc")"' exit
 		# The netrc file must be readable only by its owner. install does this
 		# in a single step by setting the file mode while creating the file
 		# from stdin.
