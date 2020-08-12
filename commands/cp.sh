@@ -44,15 +44,6 @@ See Also:
 " "$osnxcpusage" "$(basename "$0")" "$0" "$0" "$0" "$0" )
 
 osnxcp() {
-	# intended behavior:
-	# note: a directory here means the argument has a trailing slash, a file does not
-	# 1. if the source is a directory and the destination is a directory, copy the contents of src to dest
-	# 2. if the source is a directory and the destination is a file, create dest as a directory and perform #1
-	# 3. if the source is a directory and the destination is an existing file, fail "%s: not a directory"
-	# 4. if the source is a file and the destination is a directory, copy src into dest with the same basename
-	# 5. if the source is a file and the destination is a file, copy src to dest
-	# 5. if the source is a file adn the destination is an existing file, overwrite
-
 	case "$1" in
 		-h | --help)
 			printf '%s\n' "$osnxcphelp"
@@ -64,60 +55,111 @@ osnxcp() {
 			fi ;;
 	esac
 
-	local dest="${*: -1}" # the space is necessary so it's not interpreted as a default
-	set -- "${@:0:$#}"    # expands to all args except the last
+	# Retrieve the destination from the end of the arguments list. The space is
+	# important in the expansion below to avoid invoking a default value.
+	#    ${@:-1} expands to 1 if $@ is unset
+	#   ${@: -1} expands to the last value in $@
+	dest="${@: -1}"
 
-	# if we have multiple sources then the destination is a directory
-	if [ "$#" -gt 1 ]; then
-		dest="$dest/"
+	# A remote path is signaled by prefixing it with either "nx:" or "switch:",
+	# similar to rsync's host prefixes.
+	case "$dest" in
+		nx:* | switch:*)
+			osnxcplocal2remote "$dest" "${@:0:$#}"
+			return 1 ;;
+
+		*)
+			osnxcpremote2local "$dest" "${@:0:$#}" ;;
+	esac
+}
+
+osnxcplocal2remote() {
+	stderrf '%s: Uploading to Nintendo Switch not yet supported.' "$0"
+}
+
+osnxcpremote2local() {
+	if [ "$#" -gt 2 ]; then
+		# If we have multiple sources then the destination *must* be a
+		# directory.
+		dest="$1/"
+	else
+		# Destination can either be a directory or a file. If it does not
+		# already exist it will be created, either as a file or a directory
+		# depending on the type of the source.
+		dest="$1"
 	fi
 
 	case "$dest" in
-		# remote destination
-		nx:* | switch:*)
-			stderr 'uploading a remote file is not yet supported' ;;
+		*/)
+			# test expressions will work with directories that don't end in a
+			# slash but will not work with files that do, so remove all
+			# trailing slashes.
+			desttest="$(trim trailing / "$1")"
 
-		# local destination
+			# It's okay if the path doesn't exist, we'll create it later, but
+			# it's not okay if the path exists and is not a directory.
+			if [ -e "$desttest" ] && [ ! -d "$desttest" ]; then
+				stderrf '%s: Not a directory: %s\n' "$0" "$1"
+				return 1
+			fi ;;
+
 		*)
-			# if the destination exists and is a directory, treat it as such
+			# Files should be copied into the directory if it already exists,
+			# so we suffix it with a slash to signify.
 			if [ -d "$dest" ]; then
 				dest="$dest/"
-			fi
-
-			# error if the destination is a file while we expect it to be a directory
-			# -f only detects a file if it doesn't have a trailing slash so trim any off
-			if [ -f "$(trim trailing / "$dest")" ]; then
-				# we diverge from cp behavior here by only printing the following once
-				# cp will print it for every single file which isn't helpful to a user here
-				stderrf '%s: not a directory\n' "$dest"
-				return 1
-			fi
-
-			# determine the ftp server's working directory
-			# we can use this to generate and pass relative urls to curl --output
-			# then we can have curl create the directory structure when recursively downloading
-			# 257 is the successful return code for a pwd command, prefixing the result line
-			ftpwd="$(osnx ftp <<< 'pwd' | awk -F '"' '/257/{print $2}')"
-			if [ -z "$ftpwd" ]; then
-				stderr 'cannot determine ftp working directory, assuming root'
-				ftpwd=/
-			fi
-
-			for src in "$@"; do
-				# trim off remote prefix, e.g., switch:/hbmenu.nro -> /hbmenu.nro
-				src="$(trim leading '.*:' "$src")"
-
-				local output
-				case "$dest" in
-					*/)
-						output="$dest/$(basename "$src")" ;;
-					*)
-						output="$dest" ;;
-				esac
-
-				if ! osnxcurl "$src" --create-dirs --output "$output" --remote-time ; then
-					stderrf '%s: no such file or directory\n' "$src"
-				fi
-			done ;;
+			fi ;;
 	esac
+
+	# Count errors because we may have an arbitrary number successes depending
+	# on how deep a potential source directory may go, with no way to know this
+	# upfront.
+	errors=0
+
+	for arg in "${@:2}"; do
+		# All sources must be prefixed with "nx:" or "switch:" for the time
+		# being. This may change since local-to-local copying is eschewed
+		# entirely to avoid potentially dangerous typos.
+		case "$arg" in
+			nx:* | switch:*)
+				src="$(trim leading '.*:' "$arg")" ;;
+			*)
+				stderrf '%s: Not copying local directory: "%s"\n' "$0" "$arg"
+				(( errors=errors+1 ))
+				continue ;;
+		esac
+
+		filepath="$(trim trailing / "$src")"
+
+		# Retrieve the first byte of a RETR on a file. Because we trim trailing
+		# slashes this will fail when attempting to RETR a directory, making it
+		# an effective method of determining if a path leads to a file.
+		if osnxcurl "$filepath" -r 0-0 &>/dev/null ; then
+			if ! osnxget "$filepath" "$dest" ; then
+				stderrf '%s: Failed to retrieve file: "%s"\n' "$0" "$arg"
+				(( errors=errors+1 ))
+			fi
+		elif curlexitfatal "$?" ; then
+			stderrf '%s: Failed to retrieve file: "%s"\n' "$0" "$arg"
+			(( errors=errors+1 ))
+		fi
+	done
+
+	return "$errors"
+}
+
+osnxget() {
+	case "$2" in
+		*/)
+			output="$2/$(basename $1)" ;;
+		*)
+			output="$2" ;;
+	esac
+
+	if osnxcurl "$1" --create-dirs -o "$output" ; then
+		return 0
+	elif curlexitfatal "$?" ; then
+		stderrf '%s: Failed to retrieve file: "%s"\n' "$0" "$1"
+		return 1
+	fi
 }
