@@ -152,17 +152,15 @@ osnxcpremote2local() {
 }
 
 osnxget() {
-	case "$2" in
+	src="$1"
+	dest="$2"
+
+	case "$dest" in
 		*/)
-			output="$2/$(basename $1)" ;;
+			output="$dest/$(basename "$src")" ;;
 		*)
-			output="$2" ;;
+			output="$dest" ;;
 	esac
 
-	if osnxcurl "$1" --create-dirs -o "$output" ; then
-		return 0
-	elif curlexitfatal "$?" ; then
-		stderrf '%s: Failed to retrieve file: "%s"\n' "$0" "$1"
-		return 1
-	fi
+	osnxcurl "$src" --create-dirs -o "$output"
 }
