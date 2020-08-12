@@ -129,13 +129,16 @@ osnxcpremote2local() {
 				continue ;;
 		esac
 
-		filepath="$(trim trailing / "$src")"
 
 		# Retrieve the first byte of a RETR on a file. Because we trim trailing
 		# slashes this will fail when attempting to RETR a directory, making it
 		# an effective method of determining if a path leads to a file.
-		if osnxcurl "$filepath" -r 0-0 &>/dev/null ; then
-			if ! osnxget "$filepath" "$dest" ; then
+		src="$(trim trailing / "$src")"
+
+		if osnxcurl "$src" -r 0-0 >/dev/null ; then
+			# Since we know it's a file we can download it and continue
+			# processing arguments.
+			if ! osnxget "$src" "$dest" ; then
 				stderrf '%s: Failed to retrieve file: "%s"\n' "$0" "$arg"
 				(( errors=errors+1 ))
 			fi
