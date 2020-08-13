@@ -32,12 +32,12 @@ Examples:
 
   backup your JKSV saves, dropping the 'JKSV/save/' prefix:
 
-    %s cp switch:/JKSV/saves/ ~/switch/saves
+    %s cp /JKSV/saves/ ~/switch/saves
 
   download every screenshot and video capture saved on your Nintendo Switch and
   store them with a flattened directory structure:
 
-    %s cp switch:/Nintendo/Album/2020/[01-12]/[00-31]/ ~/Pictures/switch
+    %s cp /Nintendo/Album/2020/{01..12}/{00..31}/ ~/Pictures/switch
 
 See Also:
   curl(1), ftp(1)
@@ -61,8 +61,8 @@ osnxcp() {
 	#   ${@: -1} expands to the last value in $@
 	dest="${@: -1}"
 
-	# A remote path is signaled by prefixing it with either "nx:" or "switch:",
-	# similar to rsync's host prefixes.
+	# A remote destination is signaled by prefixing it with either "nx:" or
+	# "switch:", similar to rsync's host prefixes.
 	case "$dest" in
 		nx:* | switch:*)
 			osnxcplocal2remote "$dest" "${@:0:$#}"
@@ -118,19 +118,7 @@ osnxcpremote2local() {
 	# upfront.
 	errors=0
 
-	for arg in "${@:2}"; do
-		# All sources must be prefixed with "nx:" or "switch:" for the time
-		# being. This may change since local-to-local copying is eschewed
-		# entirely to avoid potentially dangerous typos.
-		case "$arg" in
-			nx:* | switch:*)
-				src="$(trim leading '.*:' "$arg")" ;;
-			*)
-				stderrf '%s: Not copying local directory: "%s"\n' "$0" "$arg"
-				(( errors=errors+1 ))
-				continue ;;
-		esac
-
+	for src in "${@:2}"; do
 		# Retrieve the first byte of a RETR on a file. Because we trim trailing
 		# slashes this will fail when attempting to RETR a directory, making it
 		# an effective method of determining if a path leads to a file.
@@ -140,14 +128,14 @@ osnxcpremote2local() {
 			# Since we know it's a file we can download it and continue
 			# processing arguments.
 			if ! osnxget "$path" "$dest" ; then
-				stderrf '%s: Failed to retrieve file: "%s"\n' "$0" "$arg"
+				stderrf '%s: Failed to retrieve file: "%s"\n' "$0" "$src"
 				(( errors=errors+1 ))
 			fi
 
 			continue
 
 		elif curlexitfatal "$?" ; then
-			stderrf '%s: Failed to retrieve path: "%s"\n' "$0" "$arg"
+			stderrf '%s: Failed to retrieve path: "%s"\n' "$0" "$src"
 			(( errors=errors+1 ))
 			continue
 
@@ -170,10 +158,10 @@ osnxcpremote2local() {
 						# It's important to suffix directories with a trailing
 						# slash so our next destination path gets built
 						# correctly.
-						recurseargs+=( "nx:$srcwd/$name/" ) ;;
+						recurseargs+=( "$srcwd/$name/" ) ;;
 
 					file)
-						recurseargs+=( "nx:$srcwd/$name" ) ;;
+						recurseargs+=( "$srcwd/$name" ) ;;
 				esac
 
 			# An MLSD command responds with a machine-readable directory
@@ -230,10 +218,11 @@ osnxcpremote2local() {
 			)
 
 		elif curlexitfatal "$?" ; then
-			stderrf '%s: Failed to list path: "%s"\n' "$0" "$arg"
+			stderrf '%s: Failed to list path: "%s"\n' "$0" "$src"
 			(( errors=errors+1 ))
+
 		else
-			stderrf '%s: No such file or directory: "%s"\n' "$0" "$arg"
+			stderrf '%s: No such file or directory: "%s"\n' "$0" "$src"
 			(( errors=errors+1 ))
 		fi
 	done
