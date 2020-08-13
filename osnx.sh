@@ -53,12 +53,13 @@ osnxcurl() {
 	user="$(osnx conf get ftp.user)"
 	pass="$(osnx conf get ftp.pass)"
 
-	curl                 \
-		--disable-epsv    \
-		--silent           \
-		--connect-timeout 3 \
-		--ftp-method nocwd   \
-		--user "$user:$pass"  \
+	curl                    \
+		--connect-timeout 3  \
+		--disable-epsv        \
+		--ftp-method nocwd     \
+		--ignore-content-length \
+		--silent                 \
+		--user "$user:$pass"      \
 		"${@:2}" -- "ftp://$ip:$port/$1"
 	return "$?"
 }
