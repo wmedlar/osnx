@@ -207,5 +207,17 @@ osnxget() {
 			output="$dest" ;;
 	esac
 
-	osnxcurl "$src" --create-dirs -o "$output"
+	# Because we haven't been trimming every trailing slash along the way our
+	# paths have two or three slashes separating each component. Since we plan
+	# to display this to the user we'll clean it up with just a single slash.
+	output="$(sed -E 's|/{2,3}|/|g' <<< "$output")"
+
+	# If the curl fails we want to pass the exit code up the call stack to let
+	# the caller handle the error.
+	if ! osnxcurl "$src" --create-dirs -o "$output" ; then
+		return "$?"
+	fi
+
+	# Print out the successful copy for the user.
+	stderrf "%s: %s -> %s\n" "$0" "$src" "$output"
 }
