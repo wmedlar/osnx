@@ -154,18 +154,40 @@ osnxcpremote2local() {
 		# Since we know the path isn't a file we can pull the same trick with a
 		# LIST command to see if it's a directory.
 		if osnxcurl "$path/" --list-only -r 0-0 >/dev/null ; then
+			recurseargs=( "new destination will go here" )
 
-			set --
+			# We can read in path attributes from an MLSD directory listing,
+			# splitting up our handling by path type. See the bottom of the
+			# loop for more details on MLSD responses.
 			while read -r type size modified permissions name ; do
 				case "$type" in
-					cdir)
+					cdir) # current directory
 						ftpwd="$name"
-						set -- "$dest/$(basename "$name")/" "$@" ;;
+						# Place the new destination at the front of the args.
+						# cdir always comes first so this isn't strictly
+						# necessary but it should prevent anything weird!
+						recurseargs[0]="$dest/$(basename "$ftpwd")/" ;;
+
 					dir)
-						set -- "$@" "nx:$ftpwd/$name/" ;;
+						# It's important to suffix directories with a trailing
+						# slash so our next destination path gets built
+						# correctly.
+						recurseargs+=( "nx:$ftpwd/$name/" ) ;;
+
 					file)
-						set -- "$@" "nx:$ftpwd/$name" ;;
+						recurseargs+=( "nx:$ftpwd/$name" ) ;;
 				esac
+
+			# An MLSD command responds with a machine-readable directory
+			# listing, with columns separated by semicolons and fields
+			# separated from their titles with equals signs. If we split on
+			# both with awk we can access the fields we're looking for easily.
+			#
+			# An example MLSD response:
+			#   Type=cdir;Size=0;Modify=19700101000000;Perm=cdeflmp; /atmosphere
+			#   Type=file;Size=5746624;Modify=20200618100152;Perm=adfrw; fusee-secondary.bin
+			#   Type=file;Size=42225;Modify=20200618100152;Perm=adfrw; hbl.nsp
+			#   Type=dir;Size=0;Modify=19700101000000;Perm=cdeflmp; contents
 			done <<< "$(
 				osnxcurl "$path/" --list-only -X MLSD |
 				awk -F '[=;]' '{print $2, $4, $6, $8, $9}'
@@ -182,7 +204,7 @@ osnxcpremote2local() {
 			# Recursively iterate another level down the directory tree. This
 			# runs in a subshell to avoid modifying the variables in this
 			# shell.
-			(osnxcpremote2local "$@")
+                       (osnxcpremote2local "${recurseargs[@]}")
 
 		elif curlexitfatal "$?" ; then
 			stderrf '%s: Failed to list path: "%s"\n' "$0" "$arg"
