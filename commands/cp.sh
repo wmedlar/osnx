@@ -162,20 +162,16 @@ osnxcpremote2local() {
 			while read -r type size modified permissions name ; do
 				case "$type" in
 					cdir) # current directory
-						ftpwd="$name"
-						# Place the new destination at the front of the args.
-						# cdir always comes first so this isn't strictly
-						# necessary but it should prevent anything weird!
-						recurseargs[0]="$dest/$(basename "$ftpwd")/" ;;
+						srcwd="$name" ;;
 
 					dir)
 						# It's important to suffix directories with a trailing
 						# slash so our next destination path gets built
 						# correctly.
-						recurseargs+=( "nx:$ftpwd/$name/" ) ;;
+						recurseargs+=( "nx:$srcwd/$name/" ) ;;
 
 					file)
-						recurseargs+=( "nx:$ftpwd/$name" ) ;;
+						recurseargs+=( "nx:$srcwd/$name" ) ;;
 				esac
 
 			# An MLSD command responds with a machine-readable directory
@@ -193,10 +189,11 @@ osnxcpremote2local() {
 				awk -F '[=;]' '{print $2, $4, $6, $8, $9}'
 			)"
 
-			if [ "$#" -eq 1 ]; then
-				# Remote directory exists but is empty. We'll create the
-				# directory locally for clarity to the user, but this behavior
-				# may change.
+			# If the remote directory exists but does not contain anything we
+			# will only have a single argument in our array, the dummy
+			# destination that we set above. For empty directories we will
+			# simply create them and skip to the next argument.
+			if [ "${#recurseargs[@]}" -eq 1 ]; then
 				mkdir -p "$1"
 				continue
 			fi
