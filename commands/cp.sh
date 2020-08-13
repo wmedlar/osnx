@@ -129,16 +129,15 @@ osnxcpremote2local() {
 				continue ;;
 		esac
 
-
 		# Retrieve the first byte of a RETR on a file. Because we trim trailing
 		# slashes this will fail when attempting to RETR a directory, making it
 		# an effective method of determining if a path leads to a file.
-		src="$(trim trailing / "$src")"
+		path="$(trim trailing / "$src")"
 
-		if osnxcurl "$src" -r 0-0 >/dev/null ; then
+		if osnxcurl "$path" -r 0-0 >/dev/null ; then
 			# Since we know it's a file we can download it and continue
 			# processing arguments.
-			if ! osnxget "$src" "$dest" ; then
+			if ! osnxget "$path" "$dest" ; then
 				stderrf '%s: Failed to retrieve file: "%s"\n' "$0" "$arg"
 				(( errors=errors+1 ))
 			fi
@@ -146,14 +145,45 @@ osnxcpremote2local() {
 			continue
 
 		elif curlexitfatal "$?" ; then
-			stderrf '%s: Failed to retrieve file: "%s"\n' "$0" "$arg"
+			stderrf '%s: Failed to retrieve path: "%s"\n' "$0" "$arg"
 			(( errors=errors+1 ))
 			continue
 
 		fi
 
-		if osnxcurl "$src/" --list-only -r 0-0 >/dev/null ; then
-			: # noop
+		# Since we know the path isn't a file we can pull the same trick with a
+		# LIST command to see if it's a directory.
+		if osnxcurl "$path/" --list-only -r 0-0 >/dev/null ; then
+
+			set --
+			while read -r type size modified permissions name ; do
+				case "$type" in
+					cdir)
+						ftpwd="$name"
+						set -- "$dest/$(basename "$name")/" "$@" ;;
+					dir)
+						set -- "$@" "nx:$ftpwd/$name/" ;;
+					file)
+						set -- "$@" "nx:$ftpwd/$name" ;;
+				esac
+			done <<< "$(
+				osnxcurl "$path/" --list-only -X MLSD |
+				awk -F '[=;]' '{print $2, $4, $6, $8, $9}'
+			)"
+
+			if [ "$#" -eq 1 ]; then
+				# Remote directory exists but is empty. We'll create the
+				# directory locally for clarity to the user, but this behavior
+				# may change.
+				mkdir -p "$1"
+				continue
+			fi
+
+			# Recursively iterate another level down the directory tree. This
+			# runs in a subshell to avoid modifying the variables in this
+			# shell.
+			(osnxcpremote2local "$@")
+
 		elif curlexitfatal "$?" ; then
 			stderrf '%s: Failed to list path: "%s"\n' "$0" "$arg"
 			(( errors=errors+1 ))
