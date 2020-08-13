@@ -77,6 +77,8 @@ osnxcplocal2remote() {
 	stderrf '%s: Uploading to Nintendo Switch not yet supported.' "$0"
 }
 
+_OSNXCPRECURSIONLEVEL=0
+
 osnxcpremote2local() {
 	if [ "$#" -gt 2 ]; then
 		# If we have multiple sources then the destination *must* be a
@@ -198,10 +200,34 @@ osnxcpremote2local() {
 				continue
 			fi
 
+			# Next we need to figure out the destination for the subsequent
+			# level of recursion. Because we attempt to mimic cp here the
+			# behavior will be different for the first iteration of the code.
+			# In short, if the source directory is suffixed with a slash we
+			# want to copy the *directory contents* to the destination and not
+			# the directory itself. We do this by dropping the source
+			# directory's basename from the new destination just this one time.
+			# Because the destination is recursively appended to as we descend
+			# the directory tree, we do not have to worry about this behavior
+			# at any other level of recursion.
+
+			# Sneaky way to check the values of both variables simultaneously.
+			# The top block will only trigger if $src ends in a slash and it's
+			# our very first iteration of the code.
+			case "$src.$_OSNXCPRECURSIONLEVEL" in
+				*/.0)
+					recurseargs[0]="$dest" ;;
+				*)
+					recurseargs[0]="$dest/$(basename "$srcwd")/" ;;
+			esac
+
 			# Recursively iterate another level down the directory tree. This
 			# runs in a subshell to avoid modifying the variables in this
-			# shell.
-                       (osnxcpremote2local "${recurseargs[@]}")
+			# shell, so we must pass our recursion level directly.
+			(
+				_OSNXCPRECURSIONLEVEL="$(( $_OSNXCPRECURSIONLEVEL+1 ))";
+				osnxcpremote2local "${recurseargs[@]}"
+			)
 
 		elif curlexitfatal "$?" ; then
 			stderrf '%s: Failed to list path: "%s"\n' "$0" "$arg"
