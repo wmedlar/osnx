@@ -102,7 +102,7 @@ while { [gets stdin command] != -1 } {
         # "227 Entering passive mode (h1,h2,h3,h4,p1,p2)" - Response to the
         # PASV command, this opens a new server connection on ip (h1.h2.h3.h4)
         # and port (p1 * 256 + p2) for data retrieval (the "data connection").
-        -re {^227[^\r\n]*\((\d+,\d+,\d+,\d+),(\d+),(\d+)\)[\r\n]+} {
+        -re {^227[^\d\r\n]*\(?(\d+,\d+,\d+,\d+),(\d+),(\d+)\)?[\r\n]+} {
             set data_ip   [string map {, .} $expect_out(1,string)]
             set data_port [expr ($expect_out(2,string) << 8) + $expect_out(3,string)]
 
