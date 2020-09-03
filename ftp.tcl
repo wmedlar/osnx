@@ -1,12 +1,19 @@
 #!/usr/bin/env expect
 
-lassign $argv ip port user password
+lassign $argv ip port user password interactive
 
-# Disable command and server response code echoing, we just want to output
-# response values.
-log_user 0
+if { "$interactive" eq 1 } {
+    log_user 1
+    set prompt "osnx> "
+} else {
+    # Disable command and server response code echoing, we just want to output
+    # response values.
+    log_user 0
+    set prompt ""
+    set interactive 0
+}
 
-spawn nc "$ip" "$port"
+spawn -noecho nc "$ip" "$port"
 set control $spawn_id
 
 expect {
@@ -18,12 +25,9 @@ expect {
     }
 }
 
-while { [gets stdin command] != -1 } {
-    set command [string trim $command]
-    if { $command eq "" } {
-        break
-    }
+send_user "$prompt"
 
+while { [gets stdin command] > -1 } {
     send "$command\n"
 
     expect {
@@ -108,7 +112,7 @@ while { [gets stdin command] != -1 } {
 
             # Spawn our data connection then hand control back to the control
             # connection to continue response processing.
-            spawn nc "$data_ip" "$data_port"
+            spawn -noecho nc "$data_ip" "$data_port"
             set data     $spawn_id
             set spawn_id $control
 
@@ -168,4 +172,6 @@ while { [gets stdin command] != -1 } {
 
         default { exit 1 }
     }
+
+    send_user "$prompt"
 }
