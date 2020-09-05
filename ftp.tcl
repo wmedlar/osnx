@@ -33,6 +33,8 @@ send_user "$prompt"
 
 while { [gets stdin command] > -1 } {
     send "$command\n"
+    # netcat echoes input lines, throw away the line with the command we just sent
+    gets $control
 
     expect {
         # Remove command echoing and line breaks to simplify response parsing.
