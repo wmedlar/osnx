@@ -1,16 +1,20 @@
 #!/usr/bin/env expect
 
-lassign $argv ip port user password interactive
+lassign $argv ip port user password
 
-if { "$interactive" eq 1 } {
-    log_user 1
-    set prompt "osnx> "
-} else {
-    # Disable command and server response code echoing, we just want to output
-    # response values.
-    log_user 0
-    set prompt ""
+# Detect if stdin is a terminal, that is if there is already data to read from
+# stdin or not. If stdin is a file or pipe (i.e., not a terminal) we'll treat
+# this data as an ftp script and run it noninteractively. If it is a terminal
+# then we'll run as an interactive client.
+if { [catch { exec test -t 0 }] } {
+    # Disable prompt and raw server response logging to minimize noise.
     set interactive 0
+    set prompt ""
+    log_user 0
+} else {
+    # Use a friendly prompt to display interactivity and resemble a REPL.
+    set interactive 1
+    set prompt "osnx> "
 }
 
 spawn -noecho nc "$ip" "$port"
