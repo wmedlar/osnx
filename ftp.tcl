@@ -43,7 +43,7 @@ while { [gets stdin command] > -1 } {
         # the data connection.
         -re {^150[^\r\n]*[\r\n]+} {
             expect {
-                \n {
+                -i $data \n {
                     puts -nonewline $expect_out(buffer)
                     exp_continue
                 }
