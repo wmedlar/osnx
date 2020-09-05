@@ -77,25 +77,24 @@ while { [gets stdin command] > -1 } {
 
             # Command did not require opening a data connection and will have
             # no further response. We can simply continue to the next command.
-            continue
         }
 
-        # "211-Extensions supported: / 211 End" -
+        # "211-Extensions supported: / 211 End" - Response to a FEAT.
         -re {^211[^\r\n]*[\r\n]+} {
-            # Read and print each line until the next non-indented 211
-            # signifies the end of the response.
+            # A 211 is a multiline response with its data sandwiched between
+            # two 211s and indented. We'll read each line and trim off the
+            # leading whitespace for better interoperability with scripts.
             expect {
                 -re {^211[^\r\n]*[\r\n]+} {
-                    continue
+                    # A subsequent 211 signifies the end of the response.
                 }
                 -re {^([^\r\n]+)[\r\n]+} {
-                    # Interior lines are always indented, strip this out.
                     puts [string trimleft $expect_out(1,string)]
                     exp_continue
                 }
                 default { exit 1 }
             }
-         }
+        }
 
         # "226 OK" - Action was successful, closing data connection. This is
         # the final response we should expect to see from a successful, or
@@ -125,16 +124,16 @@ while { [gets stdin command] > -1 } {
             exp_continue
         }
 
-        # "250-Status / 250 End"
+        # "250-Status / 250 End" - Response to a MLST.
         -re {^250[^\r\n]*[\r\n]+} {
-            # Read and print each line until the next non-indented 250
-            # signifies the end of the response.
+            # A 250 is a multiline response with its data sandwiched between
+            # two 250s and indented. We'll read each line and trim off the
+            # leading whitespace for better interoperability with scripts.
             expect {
                 -re {^250[^\r\n]*[\r\n]+} {
-                    continue
+                    # A subsequent 250 signifies the end of the response.
                 }
                 -re {^([^\r\n]+)[\r\n]+} {
-                    # Interior lines are always indented, strip this out.
                     puts [string trimleft $expect_out(1,string)]
                     exp_continue
                 }
