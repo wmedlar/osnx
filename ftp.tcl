@@ -178,11 +178,19 @@ while { [gets stdin command] > -1 } {
         }
 
         -re {^(\d\d\d).*[\r\n]+} {
-            puts stderr "uncaught server return code: $expect_out(1,string)"
-            puts stderr $expect_out(buffer)
+            # Unhandled response, log for future implementation.
+            puts stderr "unhandled server response: $expect_out(buffer)"
         }
 
-        default { exit 1 }
+        eof {
+            puts stderr "server closed connection"
+            exit 1
+        }
+
+        timeout {
+            puts stderr "server did not respond within timeout"
+            exit 1
+        }
     }
 
     send_user "$prompt"
