@@ -106,9 +106,11 @@ while { [gets stdin command] > -1 } {
             set data     $spawn_id
             set spawn_id $control
 
-            exp_continue
-        }
 
+            # Continue the expect block only if the PASV command was sent
+            # automatically by the script and not by the user.
+            if { ! [string match -nocase "PASV*" $command] } {
+                exp_continue
             }
         }
 
