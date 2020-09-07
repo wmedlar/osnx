@@ -133,6 +133,7 @@ while { [gets stdin command] > -1 } {
             # need to resend the user's command to fufill the requested action.
             # This pattern is also used in 230 when logging in.
             if { ! [string match -nocase $last_sent $command] } {
+                ftpsend $control $command
                 exp_continue
             }
         }
@@ -175,10 +176,7 @@ while { [gets stdin command] > -1 } {
         # a new connection to retrieve the response from this command. See the
         # "227 Entering passive mode" and "150 Ready" handlers for more detail.
         -re {^503[^\r\n]*[\r\n]+} {
-            # We resend the command here instead of in 227 to avoid an infinite
-            # loop if the "PASV" command is passed over stdin.
             ftpsend $control "PASV"
-            ftpsend $control $command
             exp_continue
         }
 
