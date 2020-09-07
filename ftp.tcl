@@ -79,21 +79,6 @@ while { [gets stdin command] > -1 } {
             # no further response. We can simply continue to the next command.
         }
 
-        # "211-Extensions supported: / 211 End" - Response to a FEAT.
-        -re {^211[^\r\n]*[\r\n]+} {
-            # A 211 is a multiline response with its data sandwiched between
-            # two 211s and indented. We'll read each line and trim off the
-            # leading whitespace for better interoperability with scripts.
-            expect {
-                -re {^211[^\r\n]*[\r\n]+} {
-                    # A subsequent 211 signifies the end of the response.
-                }
-                -re {^([^\r\n]+)[\r\n]+} {
-                    puts [string trimleft $expect_out(1,string)]
-                    exp_continue
-                }
-                default { exit 1 }
-            }
         }
 
         # "226 OK" - Action was successful, closing data connection. This is
@@ -124,20 +109,6 @@ while { [gets stdin command] > -1 } {
             exp_continue
         }
 
-        # "250-Status / 250 End" - Response to a MLST.
-        -re {^250[^\r\n]*[\r\n]+} {
-            # A 250 is a multiline response with its data sandwiched between
-            # two 250s and indented. We'll read each line and trim off the
-            # leading whitespace for better interoperability with scripts.
-            expect {
-                -re {^250[^\r\n]*[\r\n]+} {
-                    # A subsequent 250 signifies the end of the response.
-                }
-                -re {^([^\r\n]+)[\r\n]+} {
-                    puts [string trimleft $expect_out(1,string)]
-                    exp_continue
-                }
-                default { exit 1 }
             }
         }
 
@@ -168,6 +139,35 @@ while { [gets stdin command] > -1 } {
         -re {^550[^\r\n]*[\r\n]+} {
             puts stderr "file or directory not available"
             exit 1
+        }
+
+        # "XXX-Start / XXX End" - A multiline response to commands like HELP,
+        # with its data indented and sandwiched between two coded responses.
+        # We'll read each line and trim off the leading whitespace for a
+        # better user experience.
+        -re {^(\d\d\d)-[^\r\n]*[\r\n]+} {
+            set code $expect_out(1,string)
+
+            expect {
+                -re "^$code\[^\r\n\]*\[\r\n\]+" {
+                    # A subsequent response with the same code signifies the
+                    # end of the multiline response.
+                }
+                -re {^([^\r\n]+)[\r\n]+} {
+                    puts [string trimleft $expect_out(1,string)]
+                    exp_continue
+                }
+                eof {
+                    puts stderr "received eof while waiting for server response"
+                    exit 1
+                }
+                timeout {
+                    puts stderr "timed out while waiting for server response"
+                    exit 1
+                }
+            }
+
+            unset code
         }
 
         -re {^(\d\d\d).*[\r\n]+} {
