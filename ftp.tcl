@@ -131,12 +131,27 @@ while { [gets stdin command] > -1 } {
             }
         }
 
+        # "230 OK" - User has successfully logged in.
+        -re {^230[^\r\n]*[\r\n]+} {
+        }
+
         # "257 "path" -
         -re {^257[^\"]*"(.*)"[\r\n]+} {
             puts $expect_out(1,string)
         }
 
-        # "502 Invalid command" - The command does not exist or is not
+        # "331 Need password"
+        -re {^331[^\r\n]*[\r\n]+} {
+            if { $password eq "" } {
+                puts stderr "server requires login but password not set"
+                exit 1
+            }
+
+            ftpsend $control "PASS $password"
+            exp_continue
+        }
+
+        # "502 Invalid command "<command>" " - The command does not exist or is not
         # supported by this server.
         -re {^502[^\"]*"(.*)"[\r\n+]} {
             puts stderr "invalid command: $expect_out(1,string)"
@@ -151,6 +166,17 @@ while { [gets stdin command] > -1 } {
             # loop if the "PASV" command is passed over stdin.
             ftpsend $control "PASV"
             ftpsend $control $command
+            exp_continue
+        }
+
+        # "530 Not logged in"
+        -re {^530[^\r\n]*[\r\n]+} {
+            if { $user eq "" } {
+                puts stderr "server requires login but username not set"
+                exit 1
+            }
+
+            ftpsend $control "USER $user"
             exp_continue
         }
 
