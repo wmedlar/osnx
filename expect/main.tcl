@@ -1,4 +1,5 @@
 #!/usr/bin/env expect
+source "[file dirname [info script]]/ftp.tcl"
 
 lassign $argv ip port user password
 
@@ -20,26 +21,6 @@ if { [catch { exec test -t 0 }] } {
 spawn -noecho nc "$ip" "$port"
 set control $spawn_id
 
-proc ftpsend { id command } {
-    send -i $id "$command\n"
-
-    # Retain the command sent in the global namespace for use in some handlers.
-    # Since some commands are sent by the program, and not by the user, this
-    # allows us to determine if a user-supplied command can be retried.
-    global last_sent
-    set    last_sent $command
-
-    expect {
-        # netcat echoes input lines, throw away the line with the command that
-        # we just sent.
-        -i $id -re "$command\[\r\n\]+" { return ok }
-        -i $id eof     { puts stderr "lost connection to server" }
-        -i $id timeout { puts stderr "timeout while sending command" }
-    }
-
-    return error
-}
-
 expect {
     # "220 Hello!"
     -re {220[^\r\n]*[\r\n]+} {}
@@ -56,7 +37,7 @@ expect {
 send_user "$prompt"
 
 while { [gets stdin command] > -1 } {
-    ftpsend $control $command
+    FTP::send $control $command
 
     expect {
         # Remove command echoing and line breaks to simplify response parsing.
@@ -136,8 +117,8 @@ while { [gets stdin command] > -1 } {
             # Since login can happen automatically and transparently we may
             # need to resend the user's command to fufill the requested action.
             # This pattern is also used in 230 when logging in.
-            if { ! [string match -nocase $last_sent $command] } {
-                ftpsend $control $command
+            if { ! [string match -nocase $FTP::last_sent $command] } {
+                FTP::send $control $command
                 exp_continue
             }
         }
@@ -147,8 +128,8 @@ while { [gets stdin command] > -1 } {
             # Since login can happen automatically and transparently we may
             # need to resend the user's command to fufill the requested action.
             # This pattern is also used in 227 when entering passive mode.
-            if { ! [string match -nocase $last_sent $command] } {
-                ftpsend $control $command
+            if { ! [string match -nocase $FTP::last_sent $command] } {
+                FTP::send $control $command
                 exp_continue
             }
         }
@@ -165,7 +146,7 @@ while { [gets stdin command] > -1 } {
                 exit 1
             }
 
-            ftpsend $control "PASS $password"
+            FTP::send $control "PASS $password"
             exp_continue
         }
 
@@ -180,7 +161,7 @@ while { [gets stdin command] > -1 } {
         # a new connection to retrieve the response from this command. See the
         # "227 Entering passive mode" and "150 Ready" handlers for more detail.
         -re {^503[^\r\n]*[\r\n]+} {
-            ftpsend $control "PASV"
+            FTP::send $control "PASV"
             exp_continue
         }
 
@@ -191,7 +172,7 @@ while { [gets stdin command] > -1 } {
                 exit 1
             }
 
-            ftpsend $control "USER $user"
+            FTP::send $control "USER $user"
             exp_continue
         }
 
