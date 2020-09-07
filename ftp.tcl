@@ -43,8 +43,12 @@ proc ftpsend { id command } {
 expect {
     # "220 Hello!"
     -re {220[^\r\n]*[\r\n]+} {}
-    default {
-        puts stderr "timed out waiting to connect"
+    eof {
+        puts stderr "received eof while connecting to server"
+        exit 1
+    }
+    timeout {
+        puts stderr "timed out while connecting to server"
         exit 1
     }
 }
