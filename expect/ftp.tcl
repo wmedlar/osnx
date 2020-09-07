@@ -11,7 +11,7 @@ namespace eval FTP {
         # Retain the command sent in the global namespace for use in some handlers.
         # Since some commands are sent by the program, and not by the user, this
         # allows us to determine if a user-supplied command can be retried.
-        set last_sent $command
+        set FTP::last_sent $command
 
         expect {
             # netcat echoes input lines, throw away the line with the command that
