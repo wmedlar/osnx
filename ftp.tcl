@@ -23,6 +23,12 @@ set control $spawn_id
 proc ftpsend { id command } {
     send -i $id "$command\n"
 
+    # Retain the command sent in the global namespace for use in some handlers.
+    # Since some commands are sent by the program, and not by the user, this
+    # allows us to determine if a user-supplied command can be retried.
+    global last_sent
+    set    last_sent $command
+
     expect {
         # netcat echoes input lines, throw away the line with the command that
         # we just sent.
@@ -123,16 +129,23 @@ while { [gets stdin command] > -1 } {
             set data     $spawn_id
             set spawn_id $control
 
-
-            # Continue the expect block only if the PASV command was sent
-            # automatically by the script and not by the user.
-            if { ! [string match -nocase "PASV*" $command] } {
+            # Since login can happen automatically and transparently we may
+            # need to resend the user's command to fufill the requested action.
+            # This pattern is also used in 230 when logging in.
+            if { ! [string match -nocase $last_sent $command] } {
                 exp_continue
             }
         }
 
         # "230 OK" - User has successfully logged in.
         -re {^230[^\r\n]*[\r\n]+} {
+            # Since login can happen automatically and transparently we may
+            # need to resend the user's command to fufill the requested action.
+            # This pattern is also used in 227 when entering passive mode.
+            if { ! [string match -nocase $last_sent $command] } {
+                ftpsend $control $command
+                exp_continue
+            }
         }
 
         # "257 "path" -
