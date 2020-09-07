@@ -117,7 +117,7 @@ while { [gets stdin command] > -1 } {
             # Since login can happen automatically and transparently we may
             # need to resend the user's command to fufill the requested action.
             # This pattern is also used in 230 when logging in.
-            if { ! [string match -nocase $FTP::last_sent $command] } {
+            if { ! [FTP::is_last_sent $command] } {
                 FTP::send $control $command
                 exp_continue
             }
@@ -128,7 +128,7 @@ while { [gets stdin command] > -1 } {
             # Since login can happen automatically and transparently we may
             # need to resend the user's command to fufill the requested action.
             # This pattern is also used in 227 when entering passive mode.
-            if { ! [string match -nocase $FTP::last_sent $command] } {
+            if { ! [FTP::is_last_sent $command] } {
                 FTP::send $control $command
                 exp_continue
             }

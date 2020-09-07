@@ -1,5 +1,9 @@
 namespace eval FTP {
-    variable last_send ""
+    variable last_sent ""
+
+    proc is_last_sent { command } {
+        return [string equal -nocase $FTP::last_sent $command]
+    }
 
     proc send { id command } {
         ::send -i $id "$command\n"
