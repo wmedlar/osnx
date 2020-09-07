@@ -20,6 +20,20 @@ if { [catch { exec test -t 0 }] } {
 spawn -noecho nc "$ip" "$port"
 set control $spawn_id
 
+proc ftpsend { id command } {
+    send -i $id "$command\n"
+
+    expect {
+        # netcat echoes input lines, throw away the line with the command that
+        # we just sent.
+        -i $id -re "$command\[\r\n\]+" { return ok }
+        -i $id eof     { puts stderr "lost connection to server" }
+        -i $id timeout { puts stderr "timeout while sending command" }
+    }
+
+    return error
+}
+
 expect {
     # "220 Hello!"
     -re {220[^\r\n]*[\r\n]+} {}
@@ -32,9 +46,7 @@ expect {
 send_user "$prompt"
 
 while { [gets stdin command] > -1 } {
-    send "$command\n"
-    # netcat echoes input lines, throw away the line with the command we just sent
-    gets $control
+    ftpsend $control $command
 
     expect {
         # Remove command echoing and line breaks to simplify response parsing.
@@ -137,7 +149,8 @@ while { [gets stdin command] > -1 } {
         -re {^503[^\r\n]*[\r\n]+} {
             # We resend the command here instead of in 227 to avoid an infinite
             # loop if the "PASV" command is passed over stdin.
-            send "PASV\nTYPE I\n$command\n"
+            ftpsend $control "PASV"
+            ftpsend $control $command
             exp_continue
         }
 
