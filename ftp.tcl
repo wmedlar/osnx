@@ -79,6 +79,11 @@ while { [gets stdin command] > -1 } {
             # no further response. We can simply continue to the next command.
         }
 
+        # "221 Disconnecting"
+        -re {^221[^\r\n]*[\r\n]+} {
+            catch close
+            catch wait
+            break
         }
 
         # "226 OK" - Action was successful, closing data connection. This is
