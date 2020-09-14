@@ -1,0 +1,15 @@
+version: "2"
+services:
+  ftpd:
+    image: stilliard/pure-ftpd
+    environment:
+      ADDED_FLAGS: --verboselog
+      PUBLICHOST: localhost
+      FTP_USER_NAME: osnx
+      FTP_USER_PASS: pass
+      FTP_USER_HOME: /host
+    ports:
+    - "5000:21"
+    - "30000-30009:30000-30009" # passive ports
+    volumes:
+    - ./:/host:ro
